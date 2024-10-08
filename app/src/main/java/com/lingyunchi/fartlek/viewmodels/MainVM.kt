@@ -1,4 +1,4 @@
-package com.lingyunchi.fartlek.views
+package com.lingyunchi.fartlek.viewmodels
 
 import androidx.lifecycle.ViewModel
 import com.lingyunchi.fartlek.MainSub

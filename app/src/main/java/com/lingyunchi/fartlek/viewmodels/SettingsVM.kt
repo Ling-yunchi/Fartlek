@@ -1,8 +1,8 @@
-package com.lingyunchi.fartlek.views
+package com.lingyunchi.fartlek.viewmodels
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import com.lingyunchi.fartlek.DarkTheme
+import com.lingyunchi.fartlek.utils.DarkTheme
 import io.paperdb.Paper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

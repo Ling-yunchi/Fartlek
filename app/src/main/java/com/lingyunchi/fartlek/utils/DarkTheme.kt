@@ -1,4 +1,4 @@
-package com.lingyunchi.fartlek
+package com.lingyunchi.fartlek.utils
 
 enum class DarkTheme(val value: Int) {
     Light(0),
