@@ -13,10 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,15 +29,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lingyunchi.fartlek.Running
-import com.lingyunchi.fartlek.components.CircularProgressButton
 import com.lingyunchi.fartlek.context.LocalNavController
 import com.lingyunchi.fartlek.ui.theme.FartlekTheme
 import com.lingyunchi.fartlek.ui.theme.Gray600
-import com.lingyunchi.fartlek.ui.theme.Gray800
-import com.lingyunchi.fartlek.ui.theme.Green300
 import com.lingyunchi.fartlek.ui.theme.Purple400
-import com.lingyunchi.fartlek.ui.theme.Red300
-import com.lingyunchi.fartlek.ui.theme.Sky300
 import com.lingyunchi.fartlek.ui.theme.Sky400
 import com.lingyunchi.fartlek.viewmodels.RunConfigVM
 
@@ -53,7 +46,11 @@ fun Run() {
 
     if (currentRunConfig == null) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-            Text("Please select a running profile", style = MaterialTheme.typography.titleLarge)
+            Text(
+                "Please select a running profile",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground
+            )
         }
         return
     }
@@ -70,7 +67,8 @@ fun Run() {
             // 显示配置名称
             Text(
                 text = "Run Profile: ${currentRunConfig.name}",
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -78,7 +76,8 @@ fun Run() {
             // 显示总时长
             Text(
                 text = "Total Duration: $totalDuration minutes",
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -119,7 +118,8 @@ fun Run() {
             currentRunConfig.intervals.forEachIndexed { index, interval ->
                 Text(
                     text = "Phase ${index + 1}: Run for ${interval.workDuration} min, Walk for ${interval.restDuration} min",
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
@@ -130,7 +130,12 @@ fun Run() {
             Button(
                 onClick = {
                     navController.navigate(Running)
-                }, modifier = Modifier.fillMaxWidth(0.5f)
+                },
+                modifier = Modifier.fillMaxWidth(0.5f),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
             ) {
                 Text("Start Run")
             }

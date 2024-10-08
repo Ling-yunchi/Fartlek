@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
@@ -39,14 +40,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.lingyunchi.fartlek.RunFinished
 import com.lingyunchi.fartlek.context.LocalNavController
 import com.lingyunchi.fartlek.ui.theme.Gray600
 import com.lingyunchi.fartlek.ui.theme.Purple400
 import com.lingyunchi.fartlek.ui.theme.Sky400
 import com.lingyunchi.fartlek.viewmodels.RunConfigVM
 import kotlinx.coroutines.delay
-import com.lingyunchi.fartlek.RunFinished
-import kotlin.time.Duration.Companion.milliseconds
 
 
 @Composable
@@ -220,6 +220,26 @@ fun Running() {
                     ) {
                         Icon(
                             Icons.Filled.Stop, contentDescription = "Stop",
+                        )
+                    }
+
+                    IconButton(
+                        onClick = {
+                            navController.navigate(
+                                RunFinished(
+                                    startTime,
+                                    60 * 1000,
+                                    selectedConfigId
+                                )
+                            )
+                        },
+                        colors = IconButtonDefaults.iconButtonColors(
+                            contentColor = MaterialTheme.colorScheme.secondary,
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
+                    ) {
+                        Icon(
+                            Icons.Filled.FitnessCenter, contentDescription = "Fuck",
                         )
                     }
                 }

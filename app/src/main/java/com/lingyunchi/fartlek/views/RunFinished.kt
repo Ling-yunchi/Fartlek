@@ -14,6 +14,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -33,7 +34,6 @@ fun RunFinished(startTime: Long, duration: Long, configId: Int) {
     val message = if (dDuration.inWholeSeconds < 30) {
         "跑步时间不足30秒，请下次努力哦！😭😭😭"
     } else {
-        logsVm.addLog(RunLog(logsVm.generateId(), startTime, duration, configId))
         dDuration.toComponents { minutes, second, _ ->
             "跑步完成，时间: ${minutes}分${second}秒！🥰🥰🥰"
         }
@@ -45,6 +45,12 @@ fun RunFinished(startTime: Long, duration: Long, configId: Int) {
         dDuration.inWholeMinutes <= 30 -> "很好，继续保持！"
         dDuration.inWholeMinutes <= 45 -> "太棒了，你正在进步！"
         else -> "极限挑战，超越自我！"
+    }
+
+    LaunchedEffect(Unit) {
+        if (dDuration.inWholeSeconds >= 30) {
+            logsVm.addLog(RunLog(logsVm.generateId(), startTime, duration, configId))
+        }
     }
 
     // 显示界面
@@ -66,12 +72,20 @@ fun RunFinished(startTime: Long, duration: Long, configId: Int) {
         Spacer(modifier = Modifier.height(16.dp))
 
         // 显示主要消息
-        Text(text = message, style = MaterialTheme.typography.titleLarge)
+        Text(
+            text = message,
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onBackground
+        )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         // 显示鼓励消息
-        Text(text = encouragementMessage, style = MaterialTheme.typography.bodyLarge)
+        Text(
+            text = encouragementMessage,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onBackground
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 

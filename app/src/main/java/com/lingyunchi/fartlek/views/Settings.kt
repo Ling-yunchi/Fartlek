@@ -30,9 +30,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.lingyunchi.fartlek.ui.theme.FartlekTheme
 import com.lingyunchi.fartlek.utils.DarkTheme
 import com.lingyunchi.fartlek.utils.toDarkTheme
-import com.lingyunchi.fartlek.ui.theme.FartlekTheme
 import com.lingyunchi.fartlek.viewmodels.SettingsVM
 
 @Composable

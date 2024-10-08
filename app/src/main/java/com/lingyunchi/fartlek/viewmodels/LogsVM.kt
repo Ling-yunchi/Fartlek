@@ -26,7 +26,7 @@ class LogsVM : ViewModel() {
         saveLogs()
     }
 
-    fun removeLog(id:Int) {
+    fun removeLog(id: Int) {
         _logs.value = _logs.value.filter { it.id != id }
         saveLogs()
     }

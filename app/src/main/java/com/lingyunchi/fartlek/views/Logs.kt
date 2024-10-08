@@ -1,8 +1,6 @@
 package com.lingyunchi.fartlek.views
 
 import android.app.AlertDialog
-import android.app.Dialog
-import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
