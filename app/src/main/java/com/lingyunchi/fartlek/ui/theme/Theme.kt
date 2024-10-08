@@ -1,7 +1,7 @@
 package com.lingyunchi.fartlek.ui.theme
 
-import android.app.Activity
 import android.os.Build
+import android.util.Log
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -9,7 +9,15 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.lingyunchi.fartlek.DarkTheme
+import com.lingyunchi.fartlek.views.Logs
+import com.lingyunchi.fartlek.views.SettingsVM
 
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
@@ -35,11 +43,18 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun FartlekTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
+    val settingsVM: SettingsVM = viewModel(LocalContext.current as ViewModelStoreOwner)
+    val darkMode by settingsVM.darkMode.collectAsState()
+
+    val darkTheme = when (darkMode) {
+        DarkTheme.System -> isSystemInDarkTheme()
+        DarkTheme.Light -> false
+        DarkTheme.Dark -> true
+    }
+
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
@@ -48,6 +63,10 @@ fun FartlekTheme(
 
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
+    }
+
+    LaunchedEffect(darkMode) {
+        Log.d("FartlekTheme", "darkMode changed: $darkMode")
     }
 
     MaterialTheme(

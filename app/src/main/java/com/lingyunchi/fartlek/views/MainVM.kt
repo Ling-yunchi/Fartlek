@@ -1,17 +1,15 @@
 package com.lingyunchi.fartlek.views
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.lingyunchi.fartlek.MainSub
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.StateFlow
 
 class MainVM : ViewModel() {
-    var pageKey = MutableStateFlow(MainSub.Run)
+    private val _pageKey = MutableStateFlow(MainSub.Run)
+    val pageKey: StateFlow<MainSub> get() = _pageKey
 
     fun navigateTo(pageKey: MainSub) {
-        this.pageKey.update { pageKey }
+        this._pageKey.value = pageKey
     }
 }

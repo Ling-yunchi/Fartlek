@@ -19,31 +19,34 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lingyunchi.fartlek.DarkTheme
 import com.lingyunchi.fartlek.toDarkTheme
 import com.lingyunchi.fartlek.ui.theme.FartlekTheme
-import io.paperdb.Paper
 
 @Composable
 fun Settings() {
-    val initialValue = Paper.book("setting").read("dark-theme", DarkTheme.System)!!.toString()
+    val settingsVM: SettingsVM = viewModel(LocalContext.current as ViewModelStoreOwner)
+    val darkMode by settingsVM.darkMode.collectAsState()
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
         TextDropdown(
             "Dark Theme",
-            listOf("Light", "Dark", "System"),
-            initialValue
-        ) { Paper.book("setting").write("dark-theme", it.toDarkTheme()) }
+            DarkTheme.entries.map { it.toString() },
+            darkMode.toString(),
+        ) { settingsVM.setDarkMode(it.toDarkTheme()) }
     }
 }
 
@@ -77,7 +80,7 @@ fun TextDropdown(
             TextField(
                 readOnly = true,
                 value = selectedOption,
-                onValueChange = {},
+                onValueChange = { },
                 label = null,
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
                 colors = ExposedDropdownMenuDefaults.textFieldColors(),
@@ -95,6 +98,7 @@ fun TextDropdown(
                         onClick = {
                             selectedOption = option
                             expanded = false
+                            onValueChange(selectedOption)
                         }
                     )
                 }

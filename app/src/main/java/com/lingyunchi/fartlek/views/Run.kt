@@ -40,7 +40,6 @@ fun Run() {
             ExposedDropdownMenuBox(
                 expanded = expanded,
                 onExpandedChange = {
-                    Log.i("DropdownMenu", "Run: expanded: $expanded -> ${!expanded}")
                     expanded = !expanded
                 }
             ) {

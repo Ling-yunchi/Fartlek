@@ -2,6 +2,7 @@
 
 package com.lingyunchi.fartlek.views
 
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -22,9 +23,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lingyunchi.fartlek.MainSub
 
@@ -32,12 +36,12 @@ import com.lingyunchi.fartlek.MainSub
 fun MainView(
     navigateTo: (Any) -> Unit,
 ) {
-    val vm = viewModel<MainVM>()
-    val pageKey by vm.pageKey.collectAsState()
+    val mainVM = viewModel<MainVM>()
+    val pageKey by mainVM.pageKey.collectAsState()
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = { TopBar() },
-        bottomBar = { BottomBar(pageKey) { vm.navigateTo(it) } },
+        bottomBar = { BottomBar(pageKey) { mainVM.navigateTo(it) } },
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -55,12 +59,21 @@ fun MainView(
 
 @Composable
 fun TopBar() {
+    val settingsVM: SettingsVM = viewModel(LocalContext.current as ViewModelStoreOwner)
+    val darkMode by settingsVM.darkMode.collectAsState()
+    Log.d("TopBar", "TopBar: ${settingsVM.hashCode()}")
+    Log.d("TopBar", "${LocalContext.current}")
+
+    LaunchedEffect(darkMode) {
+        Log.d("TopBar", "darkMode changed: $darkMode")
+    }
+
     TopAppBar(
         colors = topAppBarColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             titleContentColor = MaterialTheme.colorScheme.primary,
         ),
-        title = { Text(text = "Fartlek Run") },
+        title = { Text(text = darkMode.toString()) },
     )
 }
 
