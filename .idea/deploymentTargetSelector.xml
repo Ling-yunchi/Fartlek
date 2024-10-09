@@ -4,7 +4,7 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2024-10-08T14:29:50.604400100Z">
+        <DropdownSelection timestamp="2024-10-09T04:56:27.069190200Z">
           <Target type="DEFAULT_BOOT">
             <handle>
               <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\龗云螭\.android\avd\Redmi_K30_Pro_API_29.avd" />

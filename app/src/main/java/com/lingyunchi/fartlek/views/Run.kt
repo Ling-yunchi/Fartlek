@@ -56,7 +56,7 @@ fun Run() {
     }
 
     // 计算总时长（单位：分钟）
-    val totalDuration = currentRunConfig.intervals.sumOf { it.workDuration + it.restDuration }
+    val totalDuration = currentRunConfig.intervals.sumOf { it.runMinutes + it.walkMinutes }
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
@@ -92,8 +92,8 @@ fun Run() {
                     .clip(RoundedCornerShape(24.dp))
             ) {
                 currentRunConfig.intervals.forEach { interval ->
-                    val workRatio = interval.workDuration / totalDuration.toFloat()
-                    val restRatio = interval.restDuration / totalDuration.toFloat()
+                    val workRatio = interval.runMinutes / totalDuration.toFloat()
+                    val restRatio = interval.walkMinutes / totalDuration.toFloat()
 
                     // 显示跑步阶段
                     Box(
@@ -117,7 +117,7 @@ fun Run() {
 
             currentRunConfig.intervals.forEachIndexed { index, interval ->
                 Text(
-                    text = "Phase ${index + 1}: Run for ${interval.workDuration} min, Walk for ${interval.restDuration} min",
+                    text = "Phase ${index + 1}: Run for ${interval.runMinutes} min, Walk for ${interval.walkMinutes} min",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onBackground
                 )

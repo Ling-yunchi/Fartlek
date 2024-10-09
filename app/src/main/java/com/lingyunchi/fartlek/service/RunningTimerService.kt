@@ -1,69 +1,95 @@
 package com.lingyunchi.fartlek.service
 
-//import android.app.Service
-//import android.content.Intent
-//import android.media.MediaPlayer
-//import android.os.IBinder
-//import com.lingyunchi.fartlek.R
-//import java.util.Timer
-//import java.util.TimerTask
-//
-//
-//class RunningTimerService : Service() {
-//
-//    private lateinit var mediaPlayer: MediaPlayer
-//    private var elapsedTime: Long = 0
-//
-//    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-//        createNotificationChannel()
-//        startForeground(NOTIFICATION_ID, createNotification())
-//
-//        Timer().scheduleAtFixedRate(object : TimerTask() {
-//            override fun run() {
-//                elapsedTime += 1 // 每秒增加
-//
-//                // 在特定时间播放声音
-//                if (alertTimes.contains(elapsedTime)) {
-//                    playSound()
-//                }
-//
-//                // 更新通知或保存时间
-//                // 这里可以更新通知内容
-//            }
-//        }, 0, 1000) // 每秒执行一次
-//
-//        return START_STICKY
-//    }
-//
-//    private fun playSound() {
-//        requestAudioFocus()
-//
-//        mediaPlayer = MediaPlayer.create(this, R.raw.test) // 替换为你的音频文件
-//        mediaPlayer.setOnCompletionListener {
-//            it.release() // 播放完后释放资源
-//            abandonAudioFocus() // 释放音频焦点
-//        }
-//        mediaPlayer.start()
-//    }
-//
-//    private fun requestAudioFocus() {
-//        // 实现音频焦点请求逻辑（如上所示）
-//    }
-//
-//    private fun abandonAudioFocus() {
-//        // 实现释放音频焦点逻辑（如上所示）
-//    }
-//
-//    private fun createNotificationChannel() {
-//        // 实现通知频道创建逻辑（如上所示）
-//    }
-//
-//    override fun onBind(intent: Intent?): IBinder? {
-//        return null
-//    }
-//
-//    override fun onDestroy() {
-//        super.onDestroy()
-//        mediaPlayer.release() // 释放媒体播放器资源
-//    }
-//}
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
+import android.content.Context
+import android.content.Intent
+import android.os.Binder
+import android.os.Build
+import android.os.Handler
+import android.os.IBinder
+import android.os.Looper
+import android.util.Log
+import androidx.core.app.NotificationCompat
+import com.lingyunchi.fartlek.R
+
+
+class RunningTimerService : Service() {
+    private val binder = LocalBinder()
+    private var lastTime = 0L
+    private val handler = Handler(Looper.getMainLooper())
+    private val updateTimeRunnable = object : Runnable {
+        override fun run() {
+            val timePass = System.currentTimeMillis() - lastTime;
+            sendBroadcast(Intent(TIME_UPDATE).apply {
+                putExtra(TIME_UPDATE_EXTRA, timePass)
+            })
+            handler.postDelayed(this, 1000) // 每秒更新一次
+        }
+    }
+
+    companion object {
+        const val TIME_UPDATE = "TimeUpdate"
+        const val TIME_UPDATE_EXTRA = "time"
+        const val NOTIFICATION_CHANNEL_ID = "RunningTimerService"
+        const val NOTIFICATION_CHANNEL_NAME = "Running Timer Service"
+    }
+
+    override fun onBind(intent: Intent): IBinder {
+        return binder
+    }
+
+    inner class LocalBinder : Binder() {
+        fun getService(): RunningTimerService = this@RunningTimerService
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        lastTime = System.currentTimeMillis()
+        handler.post(updateTimeRunnable)
+        startForeground(1, createNotification(""))
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        handler.removeCallbacks(updateTimeRunnable)
+    }
+
+    private fun createNotification(contentText: String): Notification {
+        val notificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                NOTIFICATION_CHANNEL_ID,
+                NOTIFICATION_CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_LOW
+            )
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("Fartlek")
+            .setContentText(contentText)
+            .setOngoing(true)
+            .build()
+    }
+
+    fun updateNotification(contentText: String) {
+        val notification = createNotification(contentText)
+        val notificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(1, notification)
+    }
+
+    fun pauseTimer() {
+        handler.removeCallbacks(updateTimeRunnable)
+    }
+
+    fun resumeTimer() {
+        handler.post(updateTimeRunnable)
+    }
+}

@@ -11,7 +11,7 @@ data class RunConfig(
     val duration: Int,
     val intervals: List<Interval>
 ) {
-    data class Interval(val workDuration: Int, val restDuration: Int)
+    data class Interval(val runMinutes: Int, val walkMinutes: Int)
 }
 
 class RunConfigVM : ViewModel() {

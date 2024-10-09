@@ -55,7 +55,7 @@ fun ConfigEdit(configId: Int) {
     val selectedConfigId by runConfigVM.selectedConfigId.collectAsState()
     var configName by remember { mutableStateOf("") }
     var intervals by remember { mutableStateOf(mutableListOf<RunConfig.Interval>()) }
-    val newConfigDuration = intervals.sumOf { it.workDuration + it.restDuration }
+    val newConfigDuration = intervals.sumOf { it.runMinutes + it.walkMinutes }
     val navController = LocalNavController.current
     val context = LocalContext.current
 
@@ -141,12 +141,12 @@ fun ConfigEdit(configId: Int) {
                 ) {
                     OutlinedNumberField(
                         modifier = Modifier.weight(1f),
-                        value = interval.workDuration,
+                        value = interval.runMinutes,
                         onValueChange = {
                             intervals = intervals.toMutableList().apply {
                                 set(
                                     index,
-                                    interval.copy(workDuration = it)
+                                    interval.copy(runMinutes = it)
                                 )
                             }
                         },
@@ -156,12 +156,12 @@ fun ConfigEdit(configId: Int) {
                     Spacer(modifier = Modifier.width(16.dp))
                     OutlinedNumberField(
                         modifier = Modifier.weight(1f),
-                        value = interval.restDuration,
+                        value = interval.walkMinutes,
                         onValueChange = {
                             intervals = intervals.toMutableList().apply {
                                 set(
                                     index,
-                                    interval.copy(restDuration = it)
+                                    interval.copy(walkMinutes = it)
                                 )
                             }
                         },
@@ -192,7 +192,7 @@ fun ConfigEdit(configId: Int) {
                         }
 
                         for (interval in intervals) {
-                            if (interval.workDuration <= 0 || interval.restDuration <= 0) {
+                            if (interval.runMinutes <= 0 || interval.walkMinutes <= 0) {
                                 Toast.makeText(
                                     context,
                                     "Intervals duration must be greater than 0",

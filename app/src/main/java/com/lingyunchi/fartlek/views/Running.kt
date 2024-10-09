@@ -1,5 +1,11 @@
 package com.lingyunchi.fartlek.views
 
+import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +31,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -42,6 +49,7 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lingyunchi.fartlek.RunFinished
 import com.lingyunchi.fartlek.context.LocalNavController
+import com.lingyunchi.fartlek.service.RunningTimerService
 import com.lingyunchi.fartlek.ui.theme.Gray600
 import com.lingyunchi.fartlek.ui.theme.Purple400
 import com.lingyunchi.fartlek.ui.theme.Sky400
@@ -49,6 +57,7 @@ import com.lingyunchi.fartlek.viewmodels.RunConfigVM
 import kotlinx.coroutines.delay
 
 
+@SuppressLint("InlinedApi")
 @Composable
 fun Running() {
     val runConfigVM = viewModel<RunConfigVM>(LocalContext.current as ViewModelStoreOwner)
@@ -62,22 +71,22 @@ fun Running() {
         return
     }
 
-    val totalDuration = currentRunConfig.intervals.sumOf { it.workDuration + it.restDuration } * 60
+    val totalDuration = currentRunConfig.intervals.sumOf { it.runMinutes + it.walkMinutes } * 60
 
     var currentPhaseIndex by remember { mutableStateOf(0) }
-    var currentPhaseDuration by remember { mutableStateOf(0) }
+    var currentPhaseDuration by remember { mutableStateOf(0L) }
     val currentIntervalIndex by remember { derivedStateOf { currentPhaseIndex / 2 } }
     var elapsedTime by remember { mutableStateOf(0L) }
     var isRunning by remember { mutableStateOf(false) }
-    var countdown by remember { mutableStateOf(5) } // 5秒倒计时
+    var countdown by remember { mutableStateOf(3) } // 5秒倒计时
     var startTime by remember { mutableStateOf(0L) }
 
     LaunchedEffect(currentRunConfig) {
         currentPhaseIndex = 0
         elapsedTime = 0
-        countdown = 5 // 重置倒计时
+        countdown = 3 // 重置倒计时
         val firstInterval = currentRunConfig.intervals.first()
-        currentPhaseDuration = firstInterval.workDuration * 60
+        currentPhaseDuration = firstInterval.runMinutes * 60L
     }
 
     LaunchedEffect(countdown) {
@@ -91,26 +100,52 @@ fun Running() {
     }
 
     if (isRunning) {
-        LaunchedEffect(elapsedTime) {
-            while (elapsedTime < totalDuration) {
-                delay(1000L) // 每秒更新
-                elapsedTime += 1
-                currentPhaseDuration -= 1
+        val context = LocalContext.current
 
+        DisposableEffect(Unit) {
+            val serviceIntent = Intent(context, RunningTimerService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(serviceIntent)
+            } else {
+                context.startService(serviceIntent)
+            }
+
+            onDispose {
+                context.stopService(serviceIntent)
+            }
+        }
+
+        DisposableEffect(Unit) {
+            val timerReceiver = object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    val newElapsedTimeMillis = intent?.getLongExtra("time", 0L) ?: 0L
+                    val newElapsedTime = newElapsedTimeMillis / 1000
+                    currentPhaseDuration -= newElapsedTime - elapsedTime
+                    elapsedTime = newElapsedTime
+                }
+            }
+            val intentFilter = IntentFilter("TimerUpdate")
+            context.registerReceiver(timerReceiver, intentFilter, Context.RECEIVER_NOT_EXPORTED)
+
+            onDispose {
+                context.unregisterReceiver(timerReceiver)
+            }
+        }
+
+        LaunchedEffect(elapsedTime) {
+            if (elapsedTime < totalDuration) {
                 if (currentPhaseDuration <= 0) {
-                    // 切换到下一个阶段
                     currentPhaseIndex += 1
 
                     if (currentIntervalIndex < currentRunConfig.intervals.size) {
                         val interval = currentRunConfig.intervals[currentIntervalIndex]
                         currentPhaseDuration =
-                            (if (currentPhaseIndex % 2 == 0) interval.workDuration else interval.restDuration) * 60
-                    } else {
-                        break
+                            (if (currentPhaseIndex % 2 == 0) interval.runMinutes else interval.walkMinutes) * 60L
                     }
                 }
+            } else {
+                navController.navigate(RunFinished(startTime, elapsedTime * 1000, selectedConfigId))
             }
-            navController.navigate(RunFinished(startTime, elapsedTime * 1000, selectedConfigId))
         }
     }
 
@@ -161,8 +196,8 @@ fun Running() {
                         .clip(RoundedCornerShape(24.dp))
                 ) {
                     currentRunConfig.intervals.forEach { interval ->
-                        val workRatio = interval.workDuration / totalDuration.toFloat()
-                        val restRatio = interval.restDuration / totalDuration.toFloat()
+                        val workRatio = interval.runMinutes / totalDuration.toFloat()
+                        val restRatio = interval.walkMinutes / totalDuration.toFloat()
 
                         // 显示跑步阶段
                         Box(
@@ -207,13 +242,10 @@ fun Running() {
                         onClick = {
                             navController.navigate(
                                 RunFinished(
-                                    startTime,
-                                    elapsedTime * 1000,
-                                    selectedConfigId
+                                    startTime, elapsedTime * 1000, selectedConfigId
                                 )
                             )
-                        },
-                        colors = IconButtonDefaults.iconButtonColors(
+                        }, colors = IconButtonDefaults.iconButtonColors(
                             contentColor = MaterialTheme.colorScheme.secondary,
                             containerColor = MaterialTheme.colorScheme.secondaryContainer
                         )
@@ -227,13 +259,10 @@ fun Running() {
                         onClick = {
                             navController.navigate(
                                 RunFinished(
-                                    startTime,
-                                    60 * 1000,
-                                    selectedConfigId
+                                    startTime, 60 * 1000, selectedConfigId
                                 )
                             )
-                        },
-                        colors = IconButtonDefaults.iconButtonColors(
+                        }, colors = IconButtonDefaults.iconButtonColors(
                             contentColor = MaterialTheme.colorScheme.secondary,
                             containerColor = MaterialTheme.colorScheme.secondaryContainer
                         )
