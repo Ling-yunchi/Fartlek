@@ -24,7 +24,7 @@ class RunningService : Service() {
     private val updateTimeRunnable = object : Runnable {
         override fun run() {
             val currentTime = System.currentTimeMillis()
-            val timePass = currentTime - lastTime;
+            val timePass = currentTime - lastTime
             lastTime = currentTime
             sendBroadcast(Intent(TIME_UPDATE).apply {
                 putExtra(TIME_UPDATE_EXTRA, timePass)
