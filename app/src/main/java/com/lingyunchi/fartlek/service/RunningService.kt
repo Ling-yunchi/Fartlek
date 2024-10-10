@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.media.MediaPlayer
 import android.os.Binder
 import android.os.Build
 import android.os.Handler
@@ -16,25 +17,28 @@ import androidx.core.app.NotificationCompat
 import com.lingyunchi.fartlek.R
 
 
-class RunningTimerService : Service() {
+class RunningService : Service() {
     private val binder = LocalBinder()
     private var lastTime = 0L
     private val handler = Handler(Looper.getMainLooper())
     private val updateTimeRunnable = object : Runnable {
         override fun run() {
-            val timePass = System.currentTimeMillis() - lastTime;
+            val currentTime = System.currentTimeMillis()
+            val timePass = currentTime - lastTime;
+            lastTime = currentTime
             sendBroadcast(Intent(TIME_UPDATE).apply {
                 putExtra(TIME_UPDATE_EXTRA, timePass)
             })
             handler.postDelayed(this, 1000) // 每秒更新一次
         }
     }
+    private lateinit var mediaPlayer: MediaPlayer
 
     companion object {
         const val TIME_UPDATE = "TimeUpdate"
         const val TIME_UPDATE_EXTRA = "time"
-        const val NOTIFICATION_CHANNEL_ID = "RunningTimerService"
-        const val NOTIFICATION_CHANNEL_NAME = "Running Timer Service"
+        const val NOTIFICATION_CHANNEL_ID = "RunningService"
+        const val NOTIFICATION_CHANNEL_NAME = "Running Service"
     }
 
     override fun onBind(intent: Intent): IBinder {
@@ -42,11 +46,12 @@ class RunningTimerService : Service() {
     }
 
     inner class LocalBinder : Binder() {
-        fun getService(): RunningTimerService = this@RunningTimerService
+        fun getService(): RunningService = this@RunningService
     }
 
     override fun onCreate() {
         super.onCreate()
+        mediaPlayer = MediaPlayer()
         lastTime = System.currentTimeMillis()
         handler.post(updateTimeRunnable)
         startForeground(1, createNotification(""))
@@ -54,6 +59,7 @@ class RunningTimerService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        mediaPlayer.release()
         handler.removeCallbacks(updateTimeRunnable)
     }
 
@@ -85,11 +91,13 @@ class RunningTimerService : Service() {
         notificationManager.notify(1, notification)
     }
 
-    fun pauseTimer() {
-        handler.removeCallbacks(updateTimeRunnable)
-    }
-
-    fun resumeTimer() {
-        handler.post(updateTimeRunnable)
+    fun playRadio(url: String) {
+        Log.i("PlayRadio", "play radio $url")
+        mediaPlayer.apply {
+            reset()
+            setDataSource(url)
+            prepare()
+            start()
+        }
     }
 }

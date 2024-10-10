@@ -24,7 +24,7 @@
             </intent-filter>
         </activity>
         <service
-            android:name=".service.RunningTimerService"
+            android:name=".service.RunningService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback"
             android:stopWithTask="false" />

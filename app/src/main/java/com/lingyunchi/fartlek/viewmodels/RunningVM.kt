@@ -2,6 +2,7 @@ package com.lingyunchi.fartlek.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lingyunchi.fartlek.utils.EventSource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,10 +24,6 @@ class RunningVM : ViewModel() {
     private val _currentPhaseDurationRemaining = MutableStateFlow(0L)
     val currentPhaseDurationRemaining = _currentPhaseDurationRemaining.asStateFlow()
 
-    private val _currentIntervalIndex = _currentPhaseIndex.map { it / 2 }
-    val currentIntervalIndex =
-        _currentIntervalIndex.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0)
-
     private val _elapsedTime = MutableStateFlow(0L)
     val elapsedTime = _elapsedTime.asStateFlow()
 
@@ -36,8 +33,10 @@ class RunningVM : ViewModel() {
     private val _startTime = MutableStateFlow(0L)
     val startTime = _startTime.asStateFlow()
 
-    private val _progress = _elapsedTime.map { it / _totalDuration.value.toDouble() }
-    val progress = _progress.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0.0)
+    val onNotification = EventSource<String>()
+    val onPlayRadio = EventSource<String>()
+    val onStop = EventSource<Unit>()
+
 
     fun setRunConfig(runConfig: RunConfig) {
         _currentRunConfig.value = runConfig
@@ -55,14 +54,20 @@ class RunningVM : ViewModel() {
         _startTime.value = System.currentTimeMillis()
     }
 
-    fun pause() {
-        _isRunning.value = false
+    fun pause(run: Boolean) {
+        _isRunning.value = run
     }
 
     fun tick(delta: Long) {
         if (!_isRunning.value) return
         _elapsedTime.value += delta
         _currentPhaseDurationRemaining.value -= delta
+
+        onNotification.emit(
+            "${_currentPhaseIndex.value / 2 + 1} / ${_currentRunConfig.value!!.intervals.size} ${
+                if (_currentPhaseIndex.value % 2 == 0) "run" else "walk"
+            } ${_currentPhaseDurationRemaining.value / 1000}s"
+        )
 
         if (_currentPhaseDurationRemaining.value <= 0) {
             _currentPhaseIndex.value += 1
@@ -86,5 +91,6 @@ class RunningVM : ViewModel() {
         _currentPhaseDurationRemaining.value = 0
         _elapsedTime.value = 0
         _startTime.value = 0
+        onStop.emit(Unit)
     }
 }

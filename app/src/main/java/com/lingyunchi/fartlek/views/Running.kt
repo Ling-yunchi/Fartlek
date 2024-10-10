@@ -2,10 +2,13 @@ package com.lingyunchi.fartlek.views
 
 import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.ServiceConnection
 import android.os.Build
+import android.os.IBinder
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -49,11 +52,13 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lingyunchi.fartlek.RunFinished
 import com.lingyunchi.fartlek.context.LocalNavController
-import com.lingyunchi.fartlek.service.RunningTimerService
+import com.lingyunchi.fartlek.service.RunningService
 import com.lingyunchi.fartlek.ui.theme.Gray600
 import com.lingyunchi.fartlek.ui.theme.Purple400
 import com.lingyunchi.fartlek.ui.theme.Sky400
+import com.lingyunchi.fartlek.utils.ListenHandler
 import com.lingyunchi.fartlek.viewmodels.RunConfigVM
+import com.lingyunchi.fartlek.viewmodels.RunningVM
 import kotlinx.coroutines.delay
 
 
@@ -71,22 +76,71 @@ fun Running() {
         return
     }
 
-    val totalDuration = currentRunConfig.intervals.sumOf { it.runMinutes + it.walkMinutes } * 60
+    val runningVM = viewModel<RunningVM>()
 
-    var currentPhaseIndex by remember { mutableStateOf(0) }
-    var currentPhaseDuration by remember { mutableStateOf(0L) }
+    LaunchedEffect(Unit) {
+        runningVM.setRunConfig(currentRunConfig)
+    }
+
+    val totalDuration by runningVM.totalDuration.collectAsState()
+    val elapsedTime by runningVM.elapsedTime.collectAsState()
+    val currentPhaseIndex by runningVM.currentPhaseIndex.collectAsState()
+    val currentPhaseDurationRemaining by runningVM.currentPhaseDurationRemaining.collectAsState()
     val currentIntervalIndex by remember { derivedStateOf { currentPhaseIndex / 2 } }
-    var elapsedTime by remember { mutableStateOf(0L) }
-    var isRunning by remember { mutableStateOf(false) }
-    var countdown by remember { mutableStateOf(3) } // 5秒倒计时
-    var startTime by remember { mutableStateOf(0L) }
+    val isRunning by runningVM.isRunning.collectAsState()
+    val progress by remember { derivedStateOf { elapsedTime / totalDuration.toFloat() } }
 
-    LaunchedEffect(currentRunConfig) {
-        currentPhaseIndex = 0
-        elapsedTime = 0
-        countdown = 3 // 重置倒计时
-        val firstInterval = currentRunConfig.intervals.first()
-        currentPhaseDuration = firstInterval.runMinutes * 60L
+    var countdown by remember { mutableStateOf(3) }
+
+    val context = LocalContext.current
+    DisposableEffect(Unit) {
+        val serviceIntent = Intent(context, RunningService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(serviceIntent)
+        } else {
+            context.startService(serviceIntent)
+        }
+
+        val timerReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                val timePass =
+                    intent?.getLongExtra(RunningService.TIME_UPDATE_EXTRA, 0L) ?: 0L
+                runningVM.tick(timePass)
+            }
+        }
+        val intentFilter = IntentFilter(RunningService.TIME_UPDATE)
+        context.registerReceiver(timerReceiver, intentFilter, Context.RECEIVER_NOT_EXPORTED)
+
+        val serviceConnection = object : ServiceConnection {
+            var notificationHandler: ListenHandler? = null
+            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                val runningService = (service as RunningService.LocalBinder).getService()
+                notificationHandler = runningVM.onNotification.register {
+                    runningService.updateNotification(it)
+                }
+            }
+
+            override fun onServiceDisconnected(name: ComponentName?) {
+                notificationHandler?.unRegister()
+                notificationHandler = null
+            }
+        }
+        context.bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
+
+        val stopHandler = runningVM.onStop.register {
+            navController.navigate(
+                RunFinished(
+                    runningVM.startTime.value, elapsedTime, selectedConfigId
+                )
+            )
+        }
+
+        onDispose {
+            stopHandler.unRegister()
+            context.unbindService(serviceConnection)
+            context.stopService(serviceIntent)
+            context.unregisterReceiver(timerReceiver)
+        }
     }
 
     LaunchedEffect(countdown) {
@@ -94,62 +148,9 @@ fun Running() {
             delay(1000L) // 每秒更新
             countdown -= 1
         } else {
-            isRunning = true // 倒计时结束后开始计时
-            startTime = System.currentTimeMillis()
+            runningVM.start()
         }
     }
-
-    if (isRunning) {
-        val context = LocalContext.current
-
-        DisposableEffect(Unit) {
-            val serviceIntent = Intent(context, RunningTimerService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(serviceIntent)
-            } else {
-                context.startService(serviceIntent)
-            }
-
-            onDispose {
-                context.stopService(serviceIntent)
-            }
-        }
-
-        DisposableEffect(Unit) {
-            val timerReceiver = object : BroadcastReceiver() {
-                override fun onReceive(context: Context?, intent: Intent?) {
-                    val newElapsedTimeMillis = intent?.getLongExtra("time", 0L) ?: 0L
-                    val newElapsedTime = newElapsedTimeMillis / 1000
-                    currentPhaseDuration -= newElapsedTime - elapsedTime
-                    elapsedTime = newElapsedTime
-                }
-            }
-            val intentFilter = IntentFilter("TimerUpdate")
-            context.registerReceiver(timerReceiver, intentFilter, Context.RECEIVER_NOT_EXPORTED)
-
-            onDispose {
-                context.unregisterReceiver(timerReceiver)
-            }
-        }
-
-        LaunchedEffect(elapsedTime) {
-            if (elapsedTime < totalDuration) {
-                if (currentPhaseDuration <= 0) {
-                    currentPhaseIndex += 1
-
-                    if (currentIntervalIndex < currentRunConfig.intervals.size) {
-                        val interval = currentRunConfig.intervals[currentIntervalIndex]
-                        currentPhaseDuration =
-                            (if (currentPhaseIndex % 2 == 0) interval.runMinutes else interval.walkMinutes) * 60L
-                    }
-                }
-            } else {
-                navController.navigate(RunFinished(startTime, elapsedTime * 1000, selectedConfigId))
-            }
-        }
-    }
-
-    val progress by remember { derivedStateOf { elapsedTime / totalDuration.toFloat() } }
 
     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
         Column(
@@ -173,7 +174,7 @@ fun Running() {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "Time Left: ${currentPhaseDuration}s",
+                    text = "Time Left: ${currentPhaseDurationRemaining / 1000}s",
                     style = MaterialTheme.typography.titleMedium
                 )
 
@@ -226,7 +227,9 @@ fun Running() {
 
                 Row {
                     IconButton(
-                        onClick = { isRunning = !isRunning },
+                        onClick = {
+                            runningVM.pause(!isRunning)
+                        },
                         colors = IconButtonDefaults.iconButtonColors(
                             contentColor = MaterialTheme.colorScheme.primary,
                             containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -240,11 +243,7 @@ fun Running() {
                     }
                     IconButton(
                         onClick = {
-                            navController.navigate(
-                                RunFinished(
-                                    startTime, elapsedTime * 1000, selectedConfigId
-                                )
-                            )
+                            runningVM.stop()
                         }, colors = IconButtonDefaults.iconButtonColors(
                             contentColor = MaterialTheme.colorScheme.secondary,
                             containerColor = MaterialTheme.colorScheme.secondaryContainer
@@ -259,7 +258,7 @@ fun Running() {
                         onClick = {
                             navController.navigate(
                                 RunFinished(
-                                    startTime, 60 * 1000, selectedConfigId
+                                    runningVM.startTime.value, 60 * 1000, selectedConfigId
                                 )
                             )
                         }, colors = IconButtonDefaults.iconButtonColors(

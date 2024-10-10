@@ -38,6 +38,7 @@ class MainActivity : ComponentActivity() {
 fun App() {
     val navController = rememberNavController()
 
+
     LocalNavControllerProvider(navController) {
         NavHost(navController = navController, startDestination = Main) {
             composable<Main> {

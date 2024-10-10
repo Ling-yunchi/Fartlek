@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -169,6 +170,14 @@ fun ConfigEdit(configId: Int) {
                         colors = OutlinedTextFieldDefaults.colors(),
                     )
                     Spacer(modifier = Modifier.width(16.dp))
+                    IconButton(onClick = {
+                        intervals = intervals.toMutableList().apply {
+                            add(index + 1, interval.copy())
+                        }
+                    }) {
+                        Icon(Icons.Outlined.ContentCopy, contentDescription = "Copy")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
                     IconButton(onClick = {
                         intervals = intervals.toMutableList().apply { removeAt(index) }
                     }) {
