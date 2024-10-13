@@ -36,6 +36,7 @@ class TTS(context: Context, locale: Locale) {
                 Log.i("TTS", "onDone: $utteranceId")
             }
 
+            @Deprecated("Deprecated in Java")
             override fun onError(utteranceId: String?) {
             }
 
