@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.res.AssetFileDescriptor
 import android.media.MediaPlayer
 import android.os.Binder
 import android.os.Build
@@ -15,6 +16,8 @@ import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.lingyunchi.fartlek.R
+import com.lingyunchi.fartlek.utils.TTS
+import java.util.Locale
 
 
 class RunningService : Service() {
@@ -33,6 +36,7 @@ class RunningService : Service() {
         }
     }
     private lateinit var mediaPlayer: MediaPlayer
+    private lateinit var tts: TTS
 
     companion object {
         const val TIME_UPDATE = "TimeUpdate"
@@ -51,6 +55,7 @@ class RunningService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        tts = TTS(this, Locale.CHINESE)
         mediaPlayer = MediaPlayer()
         lastTime = System.currentTimeMillis()
         handler.post(updateTimeRunnable)
@@ -59,6 +64,7 @@ class RunningService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        tts.destroy()
         mediaPlayer.release()
         handler.removeCallbacks(updateTimeRunnable)
     }
@@ -91,11 +97,16 @@ class RunningService : Service() {
         notificationManager.notify(1, notification)
     }
 
-    fun playRadio(url: String) {
-        Log.i("PlayRadio", "play radio $url")
+    fun speak(text: String) {
+        tts.speak(text)
+    }
+
+    fun playRadio(id: Int) {
+        Log.i("PlayRadio", "play radio $id")
+        val afd: AssetFileDescriptor = this.resources.openRawResourceFd(id)
         mediaPlayer.apply {
             reset()
-            setDataSource(url)
+            setDataSource(afd)
             prepare()
             start()
         }

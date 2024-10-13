@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -57,15 +58,19 @@ import com.lingyunchi.fartlek.ui.theme.Gray600
 import com.lingyunchi.fartlek.ui.theme.Purple400
 import com.lingyunchi.fartlek.ui.theme.Sky400
 import com.lingyunchi.fartlek.utils.ListenHandler
+import com.lingyunchi.fartlek.utils.milliToMinuteSecond
+import com.lingyunchi.fartlek.utils.secondToMinuteSecond
 import com.lingyunchi.fartlek.viewmodels.RunConfigVM
 import com.lingyunchi.fartlek.viewmodels.RunningVM
+import com.lingyunchi.fartlek.viewmodels.SettingsVM
 import kotlinx.coroutines.delay
 
 
 @SuppressLint("InlinedApi")
 @Composable
 fun Running() {
-    val runConfigVM = viewModel<RunConfigVM>(LocalContext.current as ViewModelStoreOwner)
+    val context = LocalContext.current
+    val runConfigVM = viewModel<RunConfigVM>(context as ViewModelStoreOwner)
     val runConfigs by runConfigVM.runConfigs.collectAsState()
     val selectedConfigId by runConfigVM.selectedConfigId.collectAsState()
     val currentRunConfig = runConfigs.find { it.id == selectedConfigId }
@@ -77,10 +82,9 @@ fun Running() {
     }
 
     val runningVM = viewModel<RunningVM>()
-
-    LaunchedEffect(Unit) {
-        runningVM.setRunConfig(currentRunConfig)
-    }
+    val settingsVM = viewModel<SettingsVM>(context as ViewModelStoreOwner)
+    val runVoiceAnnouncement by settingsVM.runVoiceAnnouncement.collectAsState()
+    val walkVoiceAnnouncement by settingsVM.walkVoiceAnnouncement.collectAsState()
 
     val totalDuration by runningVM.totalDuration.collectAsState()
     val elapsedTime by runningVM.elapsedTime.collectAsState()
@@ -92,7 +96,10 @@ fun Running() {
 
     var countdown by remember { mutableStateOf(3) }
 
-    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        runningVM.setRunConfig(currentRunConfig)
+    }
+
     DisposableEffect(Unit) {
         val serviceIntent = Intent(context, RunningService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -113,16 +120,42 @@ fun Running() {
 
         val serviceConnection = object : ServiceConnection {
             var notificationHandler: ListenHandler? = null
+            var currentPhaseDurationRemainingChangeHandler: ListenHandler? = null
+            var phaseChangeHandler: ListenHandler? = null
             override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
                 val runningService = (service as RunningService.LocalBinder).getService()
                 notificationHandler = runningVM.onNotification.register {
                     runningService.updateNotification(it)
+                }
+                currentPhaseDurationRemainingChangeHandler =
+                    runningVM.onCurrentPhaseDurationRemainingChange.register { (idx, lastTime, currentTime) ->
+                        val intervalIndex = idx / 2
+                        val lastSecond = lastTime / 1000
+                        val currentSecond = currentTime / 1000
+                        if (idx % 2 == 0) {
+                            // run
+                            val announcement =
+                                runVoiceAnnouncement.firstOrNull { lastSecond > it }
+                            if (announcement != null && announcement >= currentSecond) {
+                                runningService.speak("第${intervalIndex + 1}节跑步还剩${announcement.secondToMinuteSecond()}")
+                            }
+                        } else {
+                            val announcement = walkVoiceAnnouncement.firstOrNull { lastSecond > it }
+                            if (announcement != null && announcement >= currentSecond) {
+                                runningService.speak("第${intervalIndex + 1}节步行还剩${announcement.secondToMinuteSecond()}")
+                            }
+                        }
+                    }
+                phaseChangeHandler = runningVM.onPhaseChange.register {
+                    runningService.speak("第${it / 2 + 1}节${if (it % 2 == 0) "跑步" else "步行"}开始，当前阶段持续时间为${currentPhaseDurationRemaining.milliToMinuteSecond()}")
                 }
             }
 
             override fun onServiceDisconnected(name: ComponentName?) {
                 notificationHandler?.unRegister()
                 notificationHandler = null
+                currentPhaseDurationRemainingChangeHandler?.unRegister()
+                currentPhaseDurationRemainingChangeHandler = null
             }
         }
         context.bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
@@ -251,6 +284,18 @@ fun Running() {
                     ) {
                         Icon(
                             Icons.Filled.Stop, contentDescription = "Stop",
+                        )
+                    }
+
+                    IconButton(
+                        onClick = {
+                        }, colors = IconButtonDefaults.iconButtonColors(
+                            contentColor = MaterialTheme.colorScheme.secondary,
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
+                    ) {
+                        Icon(
+                            Icons.Filled.Audiotrack, contentDescription = "Play Audio",
                         )
                     }
 

@@ -30,8 +30,15 @@ class RunningVM : ViewModel() {
     val startTime = _startTime.asStateFlow()
 
     val onNotification = EventSource<String>()
-    val onPlayRadio = EventSource<String>()
     val onStop = EventSource<Unit>()
+
+    data class CurrentPhaseDurationRemainingArgs(
+        val currentPhaseIndex: Int, val lastTime: Long, val currentTime: Long
+    )
+
+    val onCurrentPhaseDurationRemainingChange = EventSource<CurrentPhaseDurationRemainingArgs>()
+
+    val onPhaseChange = EventSource<Int>()
 
 
     fun setRunConfig(runConfig: RunConfig) {
@@ -48,6 +55,7 @@ class RunningVM : ViewModel() {
         if (_currentRunConfig.value == null) throw IllegalStateException("No run config")
         _isRunning.value = true
         _startTime.value = System.currentTimeMillis()
+        onPhaseChange.emit(_currentPhaseIndex.value)
     }
 
     fun pause(run: Boolean) {
@@ -57,6 +65,7 @@ class RunningVM : ViewModel() {
     fun tick(delta: Long) {
         if (!_isRunning.value) return
         _elapsedTime.value += delta
+        val lastPhaseDurationRemaining = _currentPhaseDurationRemaining.value
         _currentPhaseDurationRemaining.value -= delta
 
         onNotification.emit(
@@ -65,16 +74,24 @@ class RunningVM : ViewModel() {
             } ${_currentPhaseDurationRemaining.value / 1000}s"
         )
 
+        onCurrentPhaseDurationRemainingChange.emit(
+            CurrentPhaseDurationRemainingArgs(
+                _currentPhaseIndex.value,
+                lastPhaseDurationRemaining,
+                _currentPhaseDurationRemaining.value
+            )
+        )
+
         if (_currentPhaseDurationRemaining.value <= 0) {
             _currentPhaseIndex.value += 1
             if (_currentPhaseIndex.value < _currentRunConfig.value!!.intervals.size * 2) {
                 val nextInterval = _currentRunConfig.value!!.intervals[_currentPhaseIndex.value / 2]
-                _currentPhaseDurationRemaining.value =
-                    if (_currentPhaseIndex.value % 2 == 0) {
-                        nextInterval.runMinutes.toLong() * 60 * 1000
-                    } else {
-                        nextInterval.walkMinutes.toLong() * 60 * 1000
-                    }
+                _currentPhaseDurationRemaining.value = if (_currentPhaseIndex.value % 2 == 0) {
+                    nextInterval.runMinutes.toLong() * 60 * 1000
+                } else {
+                    nextInterval.walkMinutes.toLong() * 60 * 1000
+                }
+                onPhaseChange.emit(_currentPhaseIndex.value)
             } else {
                 stop()
             }

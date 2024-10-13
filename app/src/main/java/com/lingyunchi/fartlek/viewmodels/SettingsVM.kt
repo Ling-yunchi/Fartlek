@@ -33,12 +33,14 @@ class SettingsVM : ViewModel() {
     }
 
     fun setRunVoiceAnnouncement(list: List<Long>) {
-        _runVoiceAnnouncement.value = list
+        _runVoiceAnnouncement.value = list.sortedDescending()
         Paper.book("settings").write("runVoiceAnnouncement", list)
+        Log.i("SettingsVM", "setRunVoiceAnnouncement: ${_runVoiceAnnouncement.value}")
     }
 
     fun setWalkVoiceAnnouncement(list: List<Long>) {
-        _walkVoiceAnnouncement.value = list
+        _walkVoiceAnnouncement.value = list.sortedDescending()
         Paper.book("settings").write("walkVoiceAnnouncement", list)
+        Log.i("SettingsVM", "setWalkVoiceAnnouncement: ${_walkVoiceAnnouncement.value}")
     }
 }
