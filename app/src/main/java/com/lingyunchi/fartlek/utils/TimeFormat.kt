@@ -1,13 +1,19 @@
 package com.lingyunchi.fartlek.utils
 
-import java.util.Locale
-
-fun Long.secondToMinuteSecond(locale: Locale = Locale.getDefault()): String {
+fun Long.secondToMinuteSecond(): String {
     // milliseconds to "m分s秒"
-    return String.format(locale, "%d分%d秒", this / 60, this % 60)
+    val minutes = this / 60
+    val seconds = this % 60
+    val minText = if (minutes != 0L) "${minutes}分" else ""
+    val secText = if (seconds != 0L) "${seconds}秒" else ""
+    return minText + secText
 }
 
-fun Long.milliToMinuteSecond(locale: Locale = Locale.getDefault()): String {
+fun Long.milliToMinuteSecond(): String {
     // milliseconds to "m分s秒"
-    return String.format(locale, "%d分%d秒", this / 60000, this % 60000 / 1000)
+    val minutes = this / 60000
+    val seconds = this % 60000 / 1000
+    val minText = if (minutes != 0L) "${minutes}分" else ""
+    val secText = if (seconds != 0L) "${seconds}秒" else ""
+    return minText + secText
 }
