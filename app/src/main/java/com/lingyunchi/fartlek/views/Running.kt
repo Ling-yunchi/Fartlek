@@ -23,11 +23,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Audiotrack
-import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -52,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lingyunchi.fartlek.RunFinished
+import com.lingyunchi.fartlek.components.AlertDialogConform
 import com.lingyunchi.fartlek.context.LocalNavController
 import com.lingyunchi.fartlek.service.RunningService
 import com.lingyunchi.fartlek.ui.theme.Gray600
@@ -95,6 +95,8 @@ fun Running() {
     val progress by remember { derivedStateOf { elapsedTime / totalDuration.toFloat() } }
 
     var countdown by remember { mutableStateOf(3) }
+
+    var stopDialogOpen by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         runningVM.setRunConfig(currentRunConfig)
@@ -276,7 +278,7 @@ fun Running() {
                     }
                     IconButton(
                         onClick = {
-                            runningVM.stop()
+                            stopDialogOpen = true
                         }, colors = IconButtonDefaults.iconButtonColors(
                             contentColor = MaterialTheme.colorScheme.secondary,
                             containerColor = MaterialTheme.colorScheme.secondaryContainer
@@ -284,35 +286,6 @@ fun Running() {
                     ) {
                         Icon(
                             Icons.Filled.Stop, contentDescription = "Stop",
-                        )
-                    }
-
-                    IconButton(
-                        onClick = {
-                        }, colors = IconButtonDefaults.iconButtonColors(
-                            contentColor = MaterialTheme.colorScheme.secondary,
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer
-                        )
-                    ) {
-                        Icon(
-                            Icons.Filled.Audiotrack, contentDescription = "Play Audio",
-                        )
-                    }
-
-                    IconButton(
-                        onClick = {
-                            navController.navigate(
-                                RunFinished(
-                                    runningVM.startTime.value, 60 * 1000, selectedConfigId
-                                )
-                            )
-                        }, colors = IconButtonDefaults.iconButtonColors(
-                            contentColor = MaterialTheme.colorScheme.secondary,
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer
-                        )
-                    ) {
-                        Icon(
-                            Icons.Filled.FitnessCenter, contentDescription = "Fuck",
                         )
                     }
                 }
@@ -329,5 +302,21 @@ fun Running() {
 //                }
             }
         }
+    }
+    if (stopDialogOpen) {
+        AlertDialogConform(
+            onDismissRequest = {
+                stopDialogOpen = false
+            },
+            onConfirmation = {
+                runningVM.stop()
+                stopDialogOpen = false
+            },
+            dialogTitle = "Stop",
+            dialogText = "Are you sure you want to stop?",
+            icon = {
+                Icon(Icons.Filled.WarningAmber, contentDescription = "Stop")
+            }
+        )
     }
 }
