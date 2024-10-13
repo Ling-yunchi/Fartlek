@@ -13,7 +13,7 @@ fun AlertDialogConform(
     dialogText: String,
     icon: @Composable (() -> Unit)? = null,
     confirmText: String = "Confirm",
-    cancelText: String = "Cancel",
+    dismissText: String = "Cancel",
 ) {
     AlertDialog(
         icon = icon,
@@ -32,7 +32,7 @@ fun AlertDialogConform(
                     onConfirmation()
                 }
             ) {
-                Text("Confirm")
+                Text(confirmText)
             }
         },
         dismissButton = {
@@ -41,7 +41,7 @@ fun AlertDialogConform(
                     onDismissRequest()
                 }
             ) {
-                Text("Dismiss")
+                Text(dismissText)
             }
         }
     )

@@ -148,9 +148,10 @@ fun Running() {
                             }
                         }
                     }
-                phaseChangeHandler = runningVM.onPhaseChange.register {
-                    runningService.speak("第${it / 2 + 1}节${if (it % 2 == 0) "跑步" else "步行"}开始，当前阶段持续时间为${currentPhaseDurationRemaining.milliToMinuteSecond()}")
-                }
+                phaseChangeHandler =
+                    runningVM.onPhaseChange.register { (currentPhaseIndex, currentPhaseDuration) ->
+                        runningService.speak("第${currentPhaseIndex / 2 + 1}节${if (currentPhaseIndex % 2 == 0) "跑步" else "步行"}开始，当前阶段持续时间为${currentPhaseDuration.milliToMinuteSecond()}")
+                    }
             }
 
             override fun onServiceDisconnected(name: ComponentName?) {

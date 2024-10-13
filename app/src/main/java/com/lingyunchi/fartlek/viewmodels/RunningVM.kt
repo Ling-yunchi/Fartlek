@@ -38,7 +38,11 @@ class RunningVM : ViewModel() {
 
     val onCurrentPhaseDurationRemainingChange = EventSource<CurrentPhaseDurationRemainingArgs>()
 
-    val onPhaseChange = EventSource<Int>()
+    data class PhaseChangeArgs(
+        val currentPhaseIndex: Int, val currentPhaseDurationRemaining: Long
+    )
+
+    val onPhaseChange = EventSource<PhaseChangeArgs>()
 
 
     fun setRunConfig(runConfig: RunConfig) {
@@ -55,7 +59,12 @@ class RunningVM : ViewModel() {
         if (_currentRunConfig.value == null) throw IllegalStateException("No run config")
         _isRunning.value = true
         _startTime.value = System.currentTimeMillis()
-        onPhaseChange.emit(_currentPhaseIndex.value)
+        onPhaseChange.emit(
+            PhaseChangeArgs(
+                _currentPhaseIndex.value,
+                _currentPhaseDurationRemaining.value
+            )
+        )
     }
 
     fun pause(run: Boolean) {
@@ -91,9 +100,15 @@ class RunningVM : ViewModel() {
                 } else {
                     nextInterval.walkMinutes.toLong() * 60 * 1000
                 }
-                onPhaseChange.emit(_currentPhaseIndex.value)
+                onPhaseChange.emit(
+                    PhaseChangeArgs(
+                        _currentPhaseIndex.value,
+                        _currentPhaseDurationRemaining.value
+                    )
+                )
             } else {
                 stop()
+                return
             }
         }
     }

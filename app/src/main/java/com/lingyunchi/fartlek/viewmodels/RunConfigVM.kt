@@ -6,10 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 data class RunConfig(
-    val id: Int,
-    val name: String,
-    val duration: Int,
-    val intervals: List<Interval>
+    val id: Int, val name: String, val duration: Int, val intervals: List<Interval>
 ) {
     data class Interval(val runMinutes: Int, val walkMinutes: Int)
 }
@@ -62,7 +59,37 @@ class RunConfigVM : ViewModel() {
     }
 
     private fun loadRunConfigs() {
-        _runConfigs.value = Paper.book("run-config").read("run-configs", listOf())!!
+        _runConfigs.value = Paper.book("run-config").read(
+            "run-configs", listOf(
+                RunConfig(
+                    id = 0, name = "Default 30 Min", duration = 30, intervals = listOf(
+                        RunConfig.Interval(runMinutes = 2, walkMinutes = 1),
+                        RunConfig.Interval(runMinutes = 2, walkMinutes = 1),
+                        RunConfig.Interval(runMinutes = 2, walkMinutes = 1),
+                        RunConfig.Interval(runMinutes = 2, walkMinutes = 1),
+                        RunConfig.Interval(runMinutes = 2, walkMinutes = 1),
+                        RunConfig.Interval(runMinutes = 2, walkMinutes = 1),
+                        RunConfig.Interval(runMinutes = 2, walkMinutes = 1),
+                        RunConfig.Interval(runMinutes = 2, walkMinutes = 1),
+                        RunConfig.Interval(runMinutes = 2, walkMinutes = 1),
+                        RunConfig.Interval(runMinutes = 2, walkMinutes = 1),
+                    )
+                ), RunConfig(
+                    id = 1, name = "Default 60 Min", duration = 60, intervals = listOf(
+                        RunConfig.Interval(runMinutes = 5, walkMinutes = 1),
+                        RunConfig.Interval(runMinutes = 5, walkMinutes = 1),
+                        RunConfig.Interval(runMinutes = 5, walkMinutes = 1),
+                        RunConfig.Interval(runMinutes = 5, walkMinutes = 1),
+                        RunConfig.Interval(runMinutes = 5, walkMinutes = 1),
+                        RunConfig.Interval(runMinutes = 5, walkMinutes = 1),
+                        RunConfig.Interval(runMinutes = 5, walkMinutes = 1),
+                        RunConfig.Interval(runMinutes = 5, walkMinutes = 1),
+                        RunConfig.Interval(runMinutes = 5, walkMinutes = 1),
+                        RunConfig.Interval(runMinutes = 5, walkMinutes = 1),
+                    )
+                )
+            )
+        )!!
         _selectedConfigId.value = Paper.book("run-config").read("selected-config-id", -1)!!
     }
 }

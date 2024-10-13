@@ -21,9 +21,9 @@ class SettingsVM : ViewModel() {
     init {
         _darkMode.value = Paper.book("settings").read("isDarkMode", DarkTheme.System)!!
         _runVoiceAnnouncement.value =
-            Paper.book("settings").read("runVoiceAnnouncement", listOf())!!
+            Paper.book("settings").read("runVoiceAnnouncement", listOf(120L, 60L, 30L))!!
         _walkVoiceAnnouncement.value =
-            Paper.book("settings").read("walkVoiceAnnouncement", listOf())!!
+            Paper.book("settings").read("walkVoiceAnnouncement", listOf(30L, 10L))!!
     }
 
     fun setDarkMode(darkMode: DarkTheme) {
