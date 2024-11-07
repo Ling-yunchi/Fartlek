@@ -30,7 +30,7 @@ class RunningVM : ViewModel() {
     val startTime = _startTime.asStateFlow()
 
     val onNotification = EventSource<String>()
-    val onStop = EventSource<Unit>()
+    val onStop = EventSource<Pair<Long, Long>>()
 
     data class CurrentPhaseDurationRemainingArgs(
         val currentPhaseIndex: Int, val lastTime: Long, val currentTime: Long
@@ -117,8 +117,17 @@ class RunningVM : ViewModel() {
         _isRunning.value = false
         _currentPhaseIndex.value = 0
         _currentPhaseDurationRemaining.value = 0
+        onStop.emit(_startTime.value to _elapsedTime.value)
         _elapsedTime.value = 0
         _startTime.value = 0
-        onStop.emit(Unit)
+    }
+
+    fun debugStop(elapsedTime: Long) {
+        _isRunning.value = false
+        _currentPhaseIndex.value = 0
+        _currentPhaseDurationRemaining.value = 0
+        onStop.emit(_startTime.value to elapsedTime)
+        _elapsedTime.value = 0
+        _startTime.value = 0
     }
 }

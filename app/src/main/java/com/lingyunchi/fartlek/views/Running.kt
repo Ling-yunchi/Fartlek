@@ -50,6 +50,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.lingyunchi.fartlek.BuildConfig
 import com.lingyunchi.fartlek.RunFinished
 import com.lingyunchi.fartlek.components.AlertDialogConform
 import com.lingyunchi.fartlek.context.LocalNavController
@@ -163,10 +164,10 @@ fun Running() {
         }
         context.bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
 
-        val stopHandler = runningVM.onStop.register {
+        val stopHandler = runningVM.onStop.register { (startTime, elapsedTime) ->
             navController.navigate(
                 RunFinished(
-                    runningVM.startTime.value, elapsedTime, selectedConfigId
+                    startTime, elapsedTime, selectedConfigId
                 )
             )
         }
@@ -289,21 +290,26 @@ fun Running() {
                             Icons.Filled.Stop, contentDescription = "Stop",
                         )
                     }
+                    if (BuildConfig.DEBUG) {
+                        IconButton(
+                            onClick = {
+                                // 30 min
+                                runningVM.debugStop(30 * 60 * 1000)
+                            }, colors = IconButtonDefaults.iconButtonColors(
+                                contentColor = MaterialTheme.colorScheme.secondary,
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer
+                            )
+                        ) {
+                            Icon(
+                                Icons.Filled.WarningAmber, contentDescription = "Stop",
+                            )
+                        }
+                    }
                 }
-
-
-                // 长按停止按钮
-//                CircularProgressButton(
-//                    onLongPressComplete = {
-//                        navController.popBackStack()
-//                    },
-//                    longPressDuration = 5,
-//                ) {
-//                    Icon(Icons.Filled.Stop, contentDescription = "Stop")
-//                }
             }
         }
     }
+
     if (stopDialogOpen) {
         AlertDialogConform(
             onDismissRequest = {
